@@ -453,8 +453,13 @@ const DOW_ID = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
 ```
 time-pro/
 ├── frontend/
-│   ├── index.html          ← Single-page app (HTML + CSS + JS inline)
-│   └── kanban-fill.svg     ← Favicon asset
+│   ├── index.html          ← HTML structure
+│   ├── css/
+│   │   └── styles.css      ← Styles + dark mode theme
+│   ├── js/
+│   │   └── app.js          ← Application logic (single-page app)
+│   └── assets/
+│       └── kanban-fill.svg ← Favicon asset
 ├── backend/
 │   ├── .env.example        ← Environment variable template (di-commit)
 │   ├── .env                ← Local environment variables (gitignored)
@@ -485,8 +490,6 @@ time-pro/
 │       │       ├── V7__create_task_changelog.sql
 │       │       └── V8__create_restore_log.sql
 │       └── seed-from-json.js
-├── installer/
-│   └── time-pro-live-install/
 ├── know-me/
 │   ├── ARCHITECTURE.md
 │   ├── BASE_DESIGN.md       ← This file

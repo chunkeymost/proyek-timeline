@@ -5,7 +5,11 @@
 Time Pro adalah aplikasi project timeline / Gantt chart interaktif dengan arsitektur client-server dan dual storage:
 
 ```
-Browser (frontend/index.html)          ← Frontend: Vanilla HTML/CSS/JS
+Browser (frontend/)                     ← Frontend: Vanilla HTML/CSS/JS
+  ├── index.html                        ← HTML structure (328 lines)
+  ├── css/styles.css                    ← Styles + dark mode (1,579 lines)
+  ├── js/app.js                         ← Application logic (1,482 lines)
+  └── assets/kanban-fill.svg            ← Favicon asset
       ↕  fetch() / REST JSON
 Node.js Server (backend/server.js)      ← Backend API
       ↕
@@ -46,7 +50,7 @@ Buka `http://localhost:3000` di browser.
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Vanilla HTML5, CSS3, JavaScript (ES6+) — single file + Bootstrap Icons (CDN) + html2pdf.js (CDN) |
+| Frontend | Vanilla HTML5, CSS3, JavaScript (ES6+) — 3 files (`index.html`, `css/styles.css`, `js/app.js`) + Bootstrap Icons (CDN) + html2pdf.js (CDN) |
 | Backend | Node.js 20+, Express 4 |
 | Storage (default) | JSON file (`data/tasks.json`) |
 | Storage (opsional) | MySQL 8+ via `mysql2` |
@@ -79,8 +83,13 @@ Buka `http://localhost:3000` di browser.
 time-pro/
 ├── package.json                    # Root scripts (postinstall, start)
 ├── frontend/
-│   ├── index.html                  # Frontend (single-page app)
-│   └── kanban-fill.svg             # Favicon asset
+│   ├── index.html                  # Frontend HTML structure
+│   ├── css/
+│   │   └── styles.css              # Styles + dark mode theme
+│   ├── js/
+│   │   └── app.js                  # Application logic (single-page app)
+│   └── assets/
+│       └── kanban-fill.svg         # Favicon asset
 ├── backend/
 │   ├── .env.example                # Environment variable template (di-commit)
 │   ├── .env                        # Local environment variables (gitignored)
@@ -115,8 +124,6 @@ time-pro/
 │       │   ├── evidence-changelog-YYYYMMDD-HHmmss.json
 │       │   └── restore-log-YYYYMMDD-HHmmss.json
 │       └── uploads/                # Upload evidence images (files)
-├── installer/                      # Plug-and-play installer (full project copy)
-│   └── time-pro-live-install/
 ├── know-me/
 │   ├── ARCHITECTURE.md
 │   ├── BASE_DESIGN.md

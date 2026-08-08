@@ -1,11 +1,11 @@
 ---
 name: project-timeline-html
-description: Membuat template project management timeline / Gantt chart interaktif dalam satu file HTML+CSS+JS (tanpa framework, tanpa build step). Gunakan skill ini setiap kali pengguna meminta "timeline proyek", "gantt chart", "project timeline", "jadwal proyek", "roadmap proyek", atau template manajemen proyek berbasis HTML/JS murni — termasuk saat mereka hanya menyebut ingin melihat/melacak tugas dan tanggal berjalan (start-end date) secara visual. Pastikan skill ini dipakai walau permintaan tidak eksplisit menyebut "gantt", selama konteksnya adalah visualisasi jadwal/tugas proyek dengan output HTML mandiri (bukan file .pptx/.xlsx/.docx — untuk itu gunakan skill dokumen yang sesuai).
+description: Membuat template project management timeline / Gantt chart interaktif dengan HTML+CSS+JS terpisah (tanpa framework, tanpa build step). Gunakan skill ini setiap kali pengguna meminta "timeline proyek", "gantt chart", "project timeline", "jadwal proyek", "roadmap proyek", atau template manajemen proyek berbasis HTML/JS murni — termasuk saat mereka hanya menyebut ingin melihat/melacak tugas dan tanggal berjalan (start-end date) secara visual. Pastikan skill ini dipakai walau permintaan tidak eksplisit menyebut "gantt", selama konteksnya adalah visualisasi jadwal/tugas proyek dengan output HTML mandiri (bukan file .pptx/.xlsx/.docx — untuk itu gunakan skill dokumen yang sesuai).
 ---
 
 # Project Timeline HTML
 
-Skill ini membuat template **lini waktu proyek interaktif** (gaya Gantt chart) sebagai satu file HTML mandiri — HTML + CSS + JavaScript saja, tanpa dependency build, tanpa React, tanpa backend. Cocok untuk dibuka langsung di browser atau dibagikan sebagai artifact `.html`.
+Skill ini membuat template **lini waktu proyek interaktif** (gaya Gantt chart) dengan struktur HTML + CSS + JavaScript terpisah — tanpa dependency build, tanpa React, tanpa backend. Cocok untuk dibuka langsung di browser atau dibagikan sebagai artifact web.
 
 ## Kapan menggunakan skill ini
 
@@ -140,7 +140,7 @@ Lihat `ARCHITECTURE.md` untuk detail data model Task, Todo, dan schema MySQL.
 - Progress task otomatis berasal dari todo checklist jika `task.todos.length > 0`; jika kosong, progress manual via slider.
 - Setiap todo memiliki field `due: Date` — date picker di sisi kiri input teks, range dibatasi oleh start-end task utama.
 - Helpers weekend: `isWeekend(d)`, `nextWeekday(d)`, `countWeekdays(a,b)` untuk menangani hari kerja.
-- File `frontend/index.html` harus tetap **satu file tunggal** (CSS & JS inline) — backend terpisah di `backend/server.js` dan `backend/src/`.
+- Frontend terdiri dari 3 file terpisah: `frontend/index.html` (HTML), `frontend/css/styles.css` (CSS + dark mode), `frontend/js/app.js` (JavaScript) — backend terpisah di `backend/server.js` dan `backend/src/`.
 - History restore & backup disimpan di file **terpisah** `data/restore-log.json`, bukan di `tasks.json` — menjaga data tugas tetap bersih. Backup otomatis tercatat dengan status `BackedUp` dan badge oranye di panel Restore.
 - Bootstrap Icons dimuat dari CDN (`bootstrap-icons.min.css`) untuk ikon copy di notifikasi.
 - MySQL mode menggunakan **soft delete** — task/todo/evidence tidak dihapus permanen, hanya di-set `deleted_at`.
