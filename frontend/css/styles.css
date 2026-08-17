@@ -308,6 +308,73 @@ body{
 .legend-item{display:flex; align-items:center; gap:7px;}
 .legend-dot{width:9px; height:9px; display:inline-block;}
 
+/* ---------- Overview Cards ---------- */
+.overview-cards{
+  display:flex;
+  gap:12px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+.overview-card{
+  flex:1;
+  min-width:180px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:16px 18px;
+  background:var(--surface);
+  border:1px solid var(--paper-line-strong);
+  border-radius:10px;
+  box-shadow:var(--shadow);
+  transition:border-color .15s;
+}
+.overview-card:hover{ border-color:var(--gold); }
+.overview-icon{
+  width:42px;
+  height:42px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  flex-shrink:0;
+}
+.overview-icon.tasks{ background:rgba(63,143,99,0.12); color:var(--status-done); }
+.overview-icon.subtasks{ background:rgba(47,107,163,0.12); color:var(--status-progress); }
+.overview-icon.overdue{ background:rgba(181,72,47,0.12); color:var(--status-risk); }
+.overview-body{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.overview-num{
+  font-family:'Space Grotesk', sans-serif;
+  font-size:22px;
+  font-weight:700;
+  color:var(--ink);
+  line-height:1.1;
+}
+.overview-label{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.overview-sub{
+  font-size:11px;
+  color:var(--ink-faint);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+[data-theme="dark"] .overview-card{
+  background:var(--surface);
+  border-color:var(--paper-line-strong);
+}
+[data-theme="dark"] .overview-card:hover{ border-color:var(--gold); }
+
+@media (max-width:600px){
+  .overview-card{ min-width:100%; }
+}
+
 /* ---------- Toast ---------- */
 .toast-container{
   position:fixed; bottom:24px; right:24px;

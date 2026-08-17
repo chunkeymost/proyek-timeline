@@ -60,6 +60,7 @@
     title: document.getElementById('project-title'),
     range: document.getElementById('project-range'),
     legend: document.getElementById('legend'),
+    overviewCards: document.getElementById('overview-cards'),
     sidebarList: document.getElementById('sidebar-list'),
     ruler: document.getElementById('ruler'),
     rows: document.getElementById('rows'),
@@ -196,6 +197,41 @@
     _confirmResolve = null;
     if(resolve) resolve();
   });
+
+  /* ---------------- Overview Cards ---------------- */
+  function renderOverviewCards(){
+    const totalTasks = tasks.length;
+    const doneTasks = tasks.filter(t => t.progress === 100).length;
+    const openTodos = tasks.reduce((sum, t) => sum + (t.todos||[]).filter(td => !td.done).length, 0);
+    const overdueTasks = tasks.filter(t => t.progress < 100 && t.end && t.end < today()).length;
+
+    els.overviewCards.innerHTML = `
+      <div class="overview-card">
+        <div class="overview-icon tasks"><i class="bi bi-clipboard-check"></i></div>
+        <div class="overview-body">
+          <div class="overview-num">${doneTasks}/${totalTasks}</div>
+          <div class="overview-label">Tugas Utama</div>
+          <div class="overview-sub">${doneTasks} selesai dari ${totalTasks} tugas</div>
+        </div>
+      </div>
+      <div class="overview-card">
+        <div class="overview-icon subtasks"><i class="bi bi-list-check"></i></div>
+        <div class="overview-body">
+          <div class="overview-num">${openTodos}</div>
+          <div class="overview-label">Sub Task Open</div>
+          <div class="overview-sub">Belum selesai (overdue + mendatang)</div>
+        </div>
+      </div>
+      <div class="overview-card">
+        <div class="overview-icon overdue"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="overview-body">
+          <div class="overview-num">${overdueTasks}</div>
+          <div class="overview-label">Task Overdue</div>
+          <div class="overview-sub">${overdueTasks > 0 ? 'Melewati batas waktu' : 'Tidak ada keterlambatan'}</div>
+        </div>
+      </div>
+    `;
+  }
 
   /* ---------------- Legend ---------------- */
   function renderLegend(){
@@ -512,6 +548,7 @@
     renderRuler(range);
     renderRows(range);
     renderSidebar();
+    renderOverviewCards();
     renderProjectRange();
     document.getElementById('backup-btn').disabled = tasks.length === 0;
     if(scrollToToday) scrollToTodayLine(range);
