@@ -435,6 +435,7 @@
           name: task.name, start: fmt(task.start), end: fmt(task.end),
           cat: task.cat, assignee: task.assignee, progress: task.progress,
         }).catch(e => console.error('Save drag failed:', e));
+        renderAll(false);
       }
     }
 
@@ -772,6 +773,7 @@
         updateProgressFromTodos(task);
         renderTodos(task);
         updateBellDot();
+        renderAll(false);
         if(editingId) loadTaskLog(editingId);
       });
       tr.querySelector('.todo-del-btn').addEventListener('click', function(){
@@ -781,6 +783,7 @@
         renderTodos(task);
         updateProgressSlider(task);
         updateBellDot();
+        renderAll(false);
         if(editingId) loadTaskLog(editingId);
       });
       tr.querySelector('.todo-text').addEventListener('click', function(){
@@ -1141,6 +1144,7 @@
     updateProgressFromTodos(t);
     updateProgressSlider(t);
     updateBellDot();
+    renderAll(false);
     if(editingId) loadTaskLog(editingId);
   });
   els.todoInput.addEventListener('keydown', (e)=>{
