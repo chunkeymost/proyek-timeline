@@ -55,6 +55,7 @@
   let selectedId = null;
   let view = "week"; // "week" | "month"
   let dayWidth = 40;
+  let showFinished = localStorage.getItem('showFinished') !== 'false';
 
   const els = {
     title: document.getElementById('project-title'),
@@ -239,7 +240,13 @@
       `<span class="legend-label">Tags : </span>` +
       Object.values(CATS).map(c =>
         `<span class="legend-item"><span class="legend-dot ${c.cls}"></span>${c.label}</span>`
-      ).join('') + `<span class="legend-item"><span class="legend-dot cat-today"></span>Hari ini</span>`;
+      ).join('') +
+      `<span class="legend-item"><span class="legend-dot cat-today"></span>Hari ini</span>` +
+      `<label class="legend-toggle">` +
+        `<span>Show/Hide Finished</span>` +
+        `<input type="checkbox" id="toggle-finished" ${showFinished ? 'checked' : ''}>` +
+        `<span class="toggle-slider"></span>` +
+      `</label>`;
   }
 
   /* ---------------- Range calc ---------------- */
@@ -308,6 +315,7 @@
 
   /* ---------------- Render rows / bars ---------------- */
   function renderRows(range){
+    const visibleTasks = showFinished ? tasks : tasks.filter(t => t.progress < 100);
     const totalDays = dayDiff(range.start, range.end)+1;
     els.rows.innerHTML = '';
     els.rows.style.width = (totalDays*dayWidth)+'px';
@@ -319,12 +327,12 @@
         const col = document.createElement('div');
         col.className='weekend-col';
         col.style.left = (i*dayWidth)+'px';
-        col.style.height = (tasks.length*52)+'px';
+        col.style.height = (visibleTasks.length*52)+'px';
         els.rows.appendChild(col);
       }
     }
 
-    tasks.forEach((t, idx) => {
+    visibleTasks.forEach((t, idx) => {
       const rowBg = document.createElement('div');
       rowBg.className='row-bg';
       rowBg.style.width = (totalDays*dayWidth)+'px';
@@ -337,7 +345,7 @@
       const line = document.createElement('div');
       line.className='today-line';
       line.style.left = (todayOffset*dayWidth)+'px';
-      line.style.height = Math.max(tasks.length*52, 52)+'px';
+      line.style.height = Math.max(visibleTasks.length*52, 52)+'px';
       els.rows.appendChild(line);
 
       const label = document.createElement('div');
@@ -347,7 +355,7 @@
       document.getElementById('ruler-scroll').appendChild(label);
     }
 
-    tasks.forEach((t, idx) => {
+    visibleTasks.forEach((t, idx) => {
       const bar = document.createElement('div');
       bar.className = 'bar ' + (CATS[t.cat] ?? CATS.lainnya).cls;
       bar.dataset.id = t.id;
@@ -388,7 +396,7 @@
       els.rows.appendChild(bar);
     });
 
-    els.rows.style.height = Math.max(tasks.length*52, 52)+'px';
+    els.rows.style.height = Math.max(visibleTasks.length*52, 52)+'px';
   }
 
   /* ---------------- Drag & resize ---------------- */
@@ -446,12 +454,13 @@
 
   /* ---------------- Sidebar ---------------- */
   function renderSidebar(){
-    if(tasks.length===0){
-      els.sidebarList.innerHTML = `<div class="sidebar-empty">Belum ada tugas. Tambahkan tugas pertama untuk mulai membangun lini waktu.</div>`;
+    const visibleTasks = showFinished ? tasks : tasks.filter(t => t.progress < 100);
+    if(visibleTasks.length===0){
+      els.sidebarList.innerHTML = `<div class="sidebar-empty">${tasks.length===0 ? 'Belum ada tugas. Tambahkan tugas pertama untuk mulai membangun lini waktu.' : 'Semua tugas sudah selesai.'}</div>`;
       return;
     }
     els.sidebarList.innerHTML = '';
-    tasks.forEach(t=>{
+    visibleTasks.forEach(t=>{
       const row = document.createElement('div');
       const isDone = t.progress === 100;
       const isOverdue = !isDone && t.end && t.end < today();
@@ -579,6 +588,15 @@
 
   document.getElementById('today-btn').addEventListener('click', ()=>{
     renderAll(true);
+  });
+
+  /* ---------------- Toggle finished tasks ---------------- */
+  document.getElementById('legend').addEventListener('change', (e)=>{
+    if(e.target.id === 'toggle-finished'){
+      showFinished = e.target.checked;
+      localStorage.setItem('showFinished', showFinished);
+      renderAll(false);
+    }
   });
 
   /* ---------------- Toast ---------------- */
