@@ -34,10 +34,19 @@
     return d;
   }
   function dayDiff(a,b){ return Math.round((b-a)/86400000); }
+  let holidays = [];
+  function holidayFor(d){
+    if(!holidays.length) return null;
+    const key = fmt(d);
+    return holidays.find(h => h.start <= key && key <= h.end) || null;
+  }
+  function isNonWorkingDay(d){
+    return d.getDay()===0 || d.getDay()===6 || !!holidayFor(d);
+  }
   function countWeekdays(start,end){
     if(!start||!end) return 0;
     let c=0; const d=new Date(start);
-    while(d<=end){ const w=d.getDay(); if(w!==0&&w!==6) c++; d.setDate(d.getDate()+1); }
+    while(d<=end){ if(!isNonWorkingDay(d)) c++; d.setDate(d.getDate()+1); }
     return c;
   }
   const MONTHS_ID = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
@@ -55,11 +64,13 @@
   let selectedId = null;
   let view = "week"; // "week" | "month"
   let dayWidth = 40;
+  let showFinished = localStorage.getItem('showFinished') !== 'false';
 
   const els = {
     title: document.getElementById('project-title'),
     range: document.getElementById('project-range'),
     legend: document.getElementById('legend'),
+    overviewCards: document.getElementById('overview-cards'),
     sidebarList: document.getElementById('sidebar-list'),
     ruler: document.getElementById('ruler'),
     rows: document.getElementById('rows'),
@@ -113,6 +124,14 @@
     rEnd: document.getElementById('r-end'),
     taskLogSection: document.getElementById('task-log-section'),
     taskLogBody: document.getElementById('task-log-body'),
+    holidayOverlay: document.getElementById('holiday-overlay'),
+    holidayForm: document.getElementById('holiday-form'),
+    holStart: document.getElementById('f-hol-start'),
+    holEnd: document.getElementById('f-hol-end'),
+    holKet: document.getElementById('f-hol-ket'),
+    holSaveBtn: document.getElementById('hol-save-btn'),
+    holCancelEditBtn: document.getElementById('hol-cancel-edit-btn'),
+    holidayList: document.getElementById('holiday-list'),
   };
 
   /* ---------------- API helper ---------------- */
@@ -155,6 +174,10 @@
       lastUpdated = data.metadata?.updatedAt || null;
       if (data.metadata?.title) els.title.textContent = data.metadata.title;
       try {
+        const holRes = await api.get('/api/holidays');
+        holidays = (holRes.holidays || []).slice().sort((a,b) => a.start.localeCompare(b.start));
+      } catch(_){ holidays = []; }
+      try {
         const logRes = await fetch('/api/restore-log');
         const logData = await logRes.json();
         restoreLog = logData.restoreLog || [];
@@ -184,18 +207,55 @@
   }
   function closeConfirm(){
     els.confirmOverlay.classList.remove('open');
-    _confirmResolve = null;
+    if(_confirmResolve){ const r = _confirmResolve; _confirmResolve = null; r(false); }
   }
   document.getElementById('confirm-cancel').addEventListener('click', ()=>{
+    const resolve = _confirmResolve;
     els.confirmOverlay.classList.remove('open');
     _confirmResolve = null;
+    if(resolve) resolve(false);
   });
   els.confirmYes.addEventListener('click', ()=>{
     const resolve = _confirmResolve;
     els.confirmOverlay.classList.remove('open');
     _confirmResolve = null;
-    if(resolve) resolve();
+    if(resolve) resolve(true);
   });
+
+  /* ---------------- Overview Cards ---------------- */
+  function renderOverviewCards(){
+    const totalTasks = tasks.length;
+    const doneTasks = tasks.filter(t => t.progress === 100).length;
+    const openTodos = tasks.reduce((sum, t) => sum + (t.todos||[]).filter(td => !td.done).length, 0);
+    const overdueTasks = tasks.filter(t => t.progress < 100 && t.end && t.end < today()).length;
+
+    els.overviewCards.innerHTML = `
+      <div class="overview-card">
+        <div class="overview-icon tasks"><i class="bi bi-clipboard-check"></i></div>
+        <div class="overview-body">
+          <div class="overview-num">${doneTasks}/${totalTasks}</div>
+          <div class="overview-label">Tugas Utama</div>
+          <div class="overview-sub">${doneTasks} selesai dari ${totalTasks} tugas</div>
+        </div>
+      </div>
+      <div class="overview-card">
+        <div class="overview-icon subtasks"><i class="bi bi-list-check"></i></div>
+        <div class="overview-body">
+          <div class="overview-num">${openTodos}</div>
+          <div class="overview-label">Sub Task Open</div>
+          <div class="overview-sub">Belum selesai (overdue + mendatang)</div>
+        </div>
+      </div>
+      <div class="overview-card">
+        <div class="overview-icon overdue"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="overview-body">
+          <div class="overview-num">${overdueTasks}</div>
+          <div class="overview-label">Task Overdue</div>
+          <div class="overview-sub">${overdueTasks > 0 ? 'Melewati batas waktu' : 'Tidak ada keterlambatan'}</div>
+        </div>
+      </div>
+    `;
+  }
 
   /* ---------------- Legend ---------------- */
   function renderLegend(){
@@ -203,7 +263,16 @@
       `<span class="legend-label">Tags : </span>` +
       Object.values(CATS).map(c =>
         `<span class="legend-item"><span class="legend-dot ${c.cls}"></span>${c.label}</span>`
-      ).join('') + `<span class="legend-item"><span class="legend-dot cat-today"></span>Hari ini</span>`;
+      ).join('') +
+      `<span class="legend-item"><span class="legend-dot cat-today"></span>Hari ini</span>` +
+      `<label class="legend-toggle">` +
+        `<span>Show/Hide Finished</span>` +
+        `<input type="checkbox" id="toggle-finished" ${showFinished ? 'checked' : ''}>` +
+        `<span class="toggle-slider"></span>` +
+      `</label>` +
+      `<button type="button" class="holiday-btn" id="holiday-manage-btn" title="Kelola Hari Libur">` +
+        `Add Holiday` +
+      `</button>`;
   }
 
   /* ---------------- Range calc ---------------- */
@@ -250,10 +319,12 @@
       if(view==='week' && dayWidth>=28){
         const dayLbl = document.createElement('div');
         const isWeekend = d.getDay()===0 || d.getDay()===6;
+        const hol = holidayFor(d);
         const isToday = d.toDateString() === T.toDateString();
-        dayLbl.className = 'ruler-day' + (isWeekend?' weekend':'') + (isToday?' today':'');
+        dayLbl.className = 'ruler-day' + ((isWeekend||hol)?' weekend':'') + (isToday?' today':'');
         dayLbl.style.left = x+'px';
         dayLbl.textContent = d.getDate();
+        if(hol) dayLbl.title = hol.keterangan;
         rs.appendChild(dayLbl);
       } else if(d.getDay()===1) {
         const dayLbl = document.createElement('div');
@@ -272,23 +343,26 @@
 
   /* ---------------- Render rows / bars ---------------- */
   function renderRows(range){
+    const visibleTasks = showFinished ? tasks : tasks.filter(t => t.progress < 100);
     const totalDays = dayDiff(range.start, range.end)+1;
     els.rows.innerHTML = '';
     els.rows.style.width = (totalDays*dayWidth)+'px';
 
-    // weekend shading
+    // weekend & holiday shading
     for(let i=0;i<totalDays;i++){
       const d = addDays(range.start,i);
-      if(d.getDay()===0 || d.getDay()===6){
+      const hol = holidayFor(d);
+      if(d.getDay()===0 || d.getDay()===6 || hol){
         const col = document.createElement('div');
-        col.className='weekend-col';
+        col.className='weekend-col' + (hol?' holiday-col':'');
         col.style.left = (i*dayWidth)+'px';
-        col.style.height = (tasks.length*52)+'px';
+        col.style.height = (visibleTasks.length*52)+'px';
+        if(hol) col.title = hol.keterangan;
         els.rows.appendChild(col);
       }
     }
 
-    tasks.forEach((t, idx) => {
+    visibleTasks.forEach((t, idx) => {
       const rowBg = document.createElement('div');
       rowBg.className='row-bg';
       rowBg.style.width = (totalDays*dayWidth)+'px';
@@ -301,7 +375,7 @@
       const line = document.createElement('div');
       line.className='today-line';
       line.style.left = (todayOffset*dayWidth)+'px';
-      line.style.height = Math.max(tasks.length*52, 52)+'px';
+      line.style.height = Math.max(visibleTasks.length*52, 52)+'px';
       els.rows.appendChild(line);
 
       const label = document.createElement('div');
@@ -311,7 +385,7 @@
       document.getElementById('ruler-scroll').appendChild(label);
     }
 
-    tasks.forEach((t, idx) => {
+    visibleTasks.forEach((t, idx) => {
       const bar = document.createElement('div');
       bar.className = 'bar ' + (CATS[t.cat] ?? CATS.lainnya).cls;
       bar.dataset.id = t.id;
@@ -352,7 +426,7 @@
       els.rows.appendChild(bar);
     });
 
-    els.rows.style.height = Math.max(tasks.length*52, 52)+'px';
+    els.rows.style.height = Math.max(visibleTasks.length*52, 52)+'px';
   }
 
   /* ---------------- Drag & resize ---------------- */
@@ -399,6 +473,7 @@
           name: task.name, start: fmt(task.start), end: fmt(task.end),
           cat: task.cat, assignee: task.assignee, progress: task.progress,
         }).catch(e => console.error('Save drag failed:', e));
+        renderAll(false);
       }
     }
 
@@ -409,12 +484,13 @@
 
   /* ---------------- Sidebar ---------------- */
   function renderSidebar(){
-    if(tasks.length===0){
-      els.sidebarList.innerHTML = `<div class="sidebar-empty">Belum ada tugas. Tambahkan tugas pertama untuk mulai membangun lini waktu.</div>`;
+    const visibleTasks = showFinished ? tasks : tasks.filter(t => t.progress < 100);
+    if(visibleTasks.length===0){
+      els.sidebarList.innerHTML = `<div class="sidebar-empty">${tasks.length===0 ? 'Belum ada tugas. Tambahkan tugas pertama untuk mulai membangun lini waktu.' : 'Semua tugas sudah selesai.'}</div>`;
       return;
     }
     els.sidebarList.innerHTML = '';
-    tasks.forEach(t=>{
+    visibleTasks.forEach(t=>{
       const row = document.createElement('div');
       const isDone = t.progress === 100;
       const isOverdue = !isDone && t.end && t.end < today();
@@ -512,6 +588,7 @@
     renderRuler(range);
     renderRows(range);
     renderSidebar();
+    renderOverviewCards();
     renderProjectRange();
     document.getElementById('backup-btn').disabled = tasks.length === 0;
     if(scrollToToday) scrollToTodayLine(range);
@@ -542,6 +619,148 @@
   document.getElementById('today-btn').addEventListener('click', ()=>{
     renderAll(true);
   });
+
+  /* ---------------- Toggle finished tasks ---------------- */
+  document.getElementById('legend').addEventListener('change', (e)=>{
+    if(e.target.id === 'toggle-finished'){
+      showFinished = e.target.checked;
+      localStorage.setItem('showFinished', showFinished);
+      renderAll(false);
+    }
+  });
+  document.getElementById('legend').addEventListener('click', (e)=>{
+    if(e.target.closest('#holiday-manage-btn')) openHolidayModal();
+  });
+
+  /* ---------------- Holiday management ---------------- */
+  let editingHolidayId = null;
+
+  function openHolidayModal(){
+    resetHolidayForm();
+    renderHolidayList();
+    els.holidayOverlay.classList.add('open');
+  }
+  function closeHolidayModal(){
+    els.holidayOverlay.classList.remove('open');
+    editingHolidayId = null;
+  }
+  function resetHolidayForm(){
+    editingHolidayId = null;
+    els.holidayForm.reset();
+    els.holStart.value = fmt(today());
+    els.holEnd.value = fmt(today());
+    els.holSaveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Simpan';
+    els.holCancelEditBtn.style.display = 'none';
+  }
+  function fmtDisplayDate(key){
+    const d = parseDate(key);
+    if(!d) return key;
+    return `${d.getDate()} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  function renderHolidayList(){
+    const list = holidays.slice().sort((a,b) => a.start.localeCompare(b.start));
+    if(list.length === 0){
+      els.holidayList.innerHTML = '<div class="holiday-empty">Belum ada hari libur tersimpan.</div>';
+      return;
+    }
+    els.holidayList.innerHTML = list.map(h => {
+      const dateLabel = h.start === h.end
+        ? fmtDisplayDate(h.start)
+        : `${fmtDisplayDate(h.start)} – ${fmtDisplayDate(h.end)}`;
+      return `<div class="holiday-item" data-id="${h.id}">` +
+        `<div class="holiday-item-info">` +
+          `<div class="holiday-item-date"><i class="bi bi-calendar-event"></i> ${dateLabel}</div>` +
+          `<div class="holiday-item-ket">${escapeHtml(h.keterangan)}</div>` +
+        `</div>` +
+        `<div class="holiday-item-actions">` +
+          `<button type="button" class="icon-btn" data-act="edit" title="Edit"><i class="bi bi-pencil"></i></button>` +
+          `<button type="button" class="icon-btn danger" data-act="delete" title="Hapus"><i class="bi bi-trash"></i></button>` +
+        `</div>` +
+      `</div>`;
+    }).join('');
+  }
+
+  async function reloadHolidays(){
+    const res = await api.get('/api/holidays');
+    holidays = (res.holidays || []).slice().sort((a,b) => a.start.localeCompare(b.start));
+  }
+
+  els.holStart.addEventListener('change', ()=>{
+    if(!editingHolidayId && els.holEnd.value < els.holStart.value){
+      els.holEnd.value = els.holStart.value;
+    }
+  });
+
+  els.holidayForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const start = els.holStart.value;
+    const end = els.holEnd.value || start;
+    const keterangan = els.holKet.value.trim();
+    if(!start){ showToast('Tanggal mulai wajib diisi', 'error'); return; }
+    if(end < start){ showToast('Tanggal selesai tidak boleh lebih awal dari tanggal mulai', 'error'); return; }
+    if(!keterangan){ showToast('Keterangan wajib diisi', 'error'); return; }
+    els.holSaveBtn.disabled = true;
+    try {
+      if(editingHolidayId){
+        await api.put('/api/holidays/'+editingHolidayId, { start, end, keterangan });
+        showToast('Hari libur diperbarui');
+      } else {
+        await api.post('/api/holidays', { start, end, keterangan });
+        showToast('Hari libur ditambahkan');
+      }
+      await reloadHolidays();
+      resetHolidayForm();
+      renderHolidayList();
+      renderAll(false);
+    } catch(err){
+      let msg = err.message || 'Gagal menyimpan hari libur';
+      try { msg = JSON.parse(msg).error || msg; } catch(_){}
+      showToast(msg, 'error');
+    } finally {
+      els.holSaveBtn.disabled = false;
+    }
+  });
+
+  els.holCancelEditBtn.addEventListener('click', resetHolidayForm);
+
+  els.holidayList.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-act]');
+    if(!btn) return;
+    const item = btn.closest('.holiday-item');
+    const id = parseInt(item.dataset.id, 10);
+    const hol = holidays.find(h => h.id === id);
+    if(!hol) return;
+
+    if(btn.dataset.act === 'edit'){
+      editingHolidayId = id;
+      els.holStart.value = hol.start;
+      els.holEnd.value = hol.end;
+      els.holKet.value = hol.keterangan;
+      els.holSaveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Update';
+      els.holCancelEditBtn.style.display = '';
+      els.holStart.focus();
+    } else if(btn.dataset.act === 'delete'){
+      const ok = await showConfirm(
+        `Yakin ingin menghapus hari libur "<b>${escapeHtml(hol.keterangan)}</b>" (${fmtDisplayDate(hol.start)})?`,
+        'Ya, Hapus'
+      );
+      if(!ok) return;
+      try {
+        await api.del('/api/holidays/'+id);
+        await reloadHolidays();
+        if(editingHolidayId === id) resetHolidayForm();
+        renderHolidayList();
+        renderAll(false);
+        showToast('Hari libur dihapus');
+      } catch(err){
+        showToast('Gagal menghapus: '+err.message, 'error');
+      }
+    }
+  });
+
+  document.getElementById('holiday-close-btn').addEventListener('click', closeHolidayModal);
+  els.holidayOverlay.addEventListener('click', (e)=>{ if(e.target===els.holidayOverlay) closeHolidayModal(); });
 
   /* ---------------- Toast ---------------- */
   function showToast(msg, type='success'){
@@ -735,6 +954,7 @@
         updateProgressFromTodos(task);
         renderTodos(task);
         updateBellDot();
+        renderAll(false);
         if(editingId) loadTaskLog(editingId);
       });
       tr.querySelector('.todo-del-btn').addEventListener('click', function(){
@@ -744,6 +964,7 @@
         renderTodos(task);
         updateProgressSlider(task);
         updateBellDot();
+        renderAll(false);
         if(editingId) loadTaskLog(editingId);
       });
       tr.querySelector('.todo-text').addEventListener('click', function(){
@@ -1104,6 +1325,7 @@
     updateProgressFromTodos(t);
     updateProgressSlider(t);
     updateBellDot();
+    renderAll(false);
     if(editingId) loadTaskLog(editingId);
   });
   els.todoInput.addEventListener('keydown', (e)=>{

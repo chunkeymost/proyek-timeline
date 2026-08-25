@@ -460,6 +460,83 @@ app.delete('/api/tasks/:id/evidences/:evId', async (req, res) => {
   }
 });
 
+/* ---------- Holidays ---------- */
+
+app.get('/api/holidays', async (req, res) => {
+  try {
+    const holidays = await storage.getHolidays();
+    res.json({ holidays });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+function validateHolidayBody(body) {
+  if (!body.start || !/^\d{4}-\d{2}-\d{2}$/.test(body.start)) {
+    return 'start (YYYY-MM-DD) wajib diisi';
+  }
+  const end = body.end || body.start;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+    return 'end harus format YYYY-MM-DD';
+  }
+  if (end < body.start) {
+    return 'end tidak boleh lebih awal dari start';
+  }
+  if (!body.keterangan || !body.keterangan.trim()) {
+    return 'keterangan wajib diisi';
+  }
+  return null;
+}
+
+app.post('/api/holidays', async (req, res) => {
+  try {
+    const err = validateHolidayBody(req.body);
+    if (err) return res.status(400).json({ error: err });
+    const holiday = await storage.createHoliday({
+      start: req.body.start,
+      end: req.body.end || req.body.start,
+      keterangan: req.body.keterangan.trim(),
+    });
+    res.status(201).json({ holiday });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/holidays/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const existing = (await storage.getHolidays()).find(h => h.id === id);
+    if (!existing) return res.status(404).json({ error: 'Holiday not found' });
+    const merged = {
+      start: req.body.start !== undefined ? req.body.start : existing.start,
+      end: req.body.end !== undefined ? req.body.end : existing.end,
+      keterangan: req.body.keterangan !== undefined ? req.body.keterangan : existing.keterangan,
+    };
+    const err = validateHolidayBody(merged);
+    if (err) return res.status(400).json({ error: err });
+    const holiday = await storage.updateHoliday(id, {
+      start: req.body.start,
+      end: req.body.end !== undefined ? req.body.end : undefined,
+      keterangan: req.body.keterangan !== undefined ? req.body.keterangan.trim() : undefined,
+    });
+    res.json({ holiday });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/holidays/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const ok = await storage.deleteHoliday(id);
+    if (!ok) return res.status(404).json({ error: 'Holiday not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* ---------- Metadata ---------- */
 
 app.get('/api/metadata', async (req, res) => {

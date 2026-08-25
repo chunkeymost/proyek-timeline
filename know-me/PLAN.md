@@ -359,12 +359,27 @@ Dokumentasi design system sebagai acuan konsistensi UI:
 
 - Font family: Space Grotesk (heading), Inter (body), IBM Plex Mono (monospace)
 - Color palette: 16 CSS custom properties (paper, ink, gold, status, dll)
+- Dark mode support via `[data-theme="dark"]` selector
 - Typography scale: 9px–30px
 - Spacing system, border radius, shadows, animations
 - Responsive breakpoints: 820px (tablet), 480px (mobile)
 - Component patterns: buttons, forms, tables, overlay, toast, confirm dialog
 - JavaScript conventions: IIFE, API helper, utility functions, keyboard shortcuts
 - File structure dan backend stack
+
+### 🔀 CSS & JS Split (v3.4.1)
+
+Pemisahan file frontend dari single-file ke 3 file terpisah:
+
+- `frontend/index.html` — Struktur HTML (328 lines)
+- `frontend/css/styles.css` — Semua CSS + dark mode (1,579 lines)
+- `frontend/js/app.js` — Seluruh logika aplikasi (1,482 lines)
+- `frontend/assets/kanban-fill.svg` — Favicon dipindah ke folder assets
+
+Keuntungan:
+- Lebih mudah maintenance dan debugging
+- CSS dan JS bisa di-cache secara terpisah oleh browser
+- Dark mode ditambahkan via CSS custom properties
 
 ### 📋 Audit Trail / Changelog
 
@@ -423,4 +438,4 @@ Buka `http://localhost:3000` di browser.
 - Jalankan: `cd backend && npm start`
 - Server listening di port yang dikonfigurasi (default: 3000)
 
-> **Catatan**: Dockerfile sudah dihapus. Gunakan installer di `installer/time-pro-live-install/` untuk deployment plug-and-play.
+> **Catatan**: Deployment dilakukan langsung tanpa Dockerfile atau installer. Copy project ke server, install dependencies, dan jalankan.
