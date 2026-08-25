@@ -9,6 +9,8 @@
   --surface:#FFFFFF;
   --gold:#C99A3B;
   --gold-soft:#F1E4C6;
+  --purple:#7C3AED;
+  --purple-hover:#6D28D9;
   --status-done:#3F8F63;
   --status-progress:#2F6BA3;
   --status-planned:#8996A8;
@@ -29,6 +31,8 @@
   --surface:#242438;
   --gold:#e2b84d;
   --gold-soft:#3a3020;
+  --purple:#A78BFA;
+  --purple-hover:#8B5CF6;
   --status-done:#4CAF50;
   --status-progress:#42a5f5;
   --status-planned:#90a4ae;
@@ -1685,4 +1689,114 @@ body{
 
 @media (prefers-reduced-motion: reduce){
   .btn{ transition:none; }
+}
+
+/* ---------- Holiday Button (Legend) ---------- */
+.holiday-btn{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11.5px;
+  font-weight:600;
+  padding:5px 12px;
+  border-radius:7px;
+  border:1px solid var(--purple);
+  background:transparent;
+  color:var(--purple);
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.holiday-btn:hover{
+  background:var(--purple-hover);
+  color:#fff;
+}
+
+/* ---------- Holiday Column ---------- */
+.holiday-col{
+  background:rgba(139,156,179,0.06);
+}
+
+/* ---------- Holiday Modal ---------- */
+.holiday-modal{ width:min(520px, 94vw); }
+.holiday-form-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:14px;
+}
+.holiday-list-head{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-top:18px;
+  margin-bottom:8px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:var(--ink-soft);
+}
+.holiday-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  max-height:260px;
+  overflow-y:auto;
+}
+.holiday-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 12px;
+  border:1px solid var(--paper-line-strong);
+  border-radius:7px;
+  background:var(--surface);
+  transition:border-color .15s;
+}
+.holiday-item:hover{ border-color:var(--gold); }
+.holiday-item-info{ min-width:0; }
+.holiday-item-date{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:12.5px;
+  font-weight:500;
+  color:var(--ink);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.holiday-item-date i{ color:var(--gold); }
+.holiday-item-ket{
+  font-size:11.5px;
+  color:var(--ink-soft);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.holiday-item-actions{ display:flex; gap:4px; flex-shrink:0; }
+.icon-btn{
+  width:28px;
+  height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--paper-line-strong);
+  border-radius:6px;
+  background:transparent;
+  color:var(--ink-soft);
+  cursor:pointer;
+  transition:all .15s;
+}
+.icon-btn:hover{ border-color:var(--gold); color:var(--gold); }
+.icon-btn.danger:hover{ border-color:#c0392b; color:#c0392b; background:rgba(192,57,43,0.07); }
+.holiday-empty{
+  padding:18px;
+  text-align:center;
+  font-size:12px;
+  color:var(--ink-soft);
+  border:1px dashed var(--paper-line-strong);
+  border-radius:7px;
 }

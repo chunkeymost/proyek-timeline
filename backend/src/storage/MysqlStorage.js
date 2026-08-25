@@ -78,6 +78,7 @@ class MysqlStorage {
         nextId: (maxTaskId[0].maxId || 0) + 1,
         nextTodoId: (maxTodoId[0].maxId || 0) + 1,
         nextEvidenceId: (maxEvidenceId[0].maxId || 0) + 1,
+        holidays: await this.getHolidays(conn),
         metadata,
       };
     } finally {
@@ -426,6 +427,83 @@ class MysqlStorage {
       [slug]
     );
     return rows.length > 0 ? rows[0].id : 2;
+  }
+
+  async getHolidays(conn) {
+    const own = !conn;
+    const c = conn || await this._getConnection();
+    try {
+      const [rows] = await c.execute('SELECT id, start_date, end_date, keterangan, created_at, updated_at FROM holidays ORDER BY start_date');
+      return rows.map(h => ({
+        id: h.id,
+        start: h.start_date.toISOString().slice(0, 10),
+        end: h.end_date.toISOString().slice(0, 10),
+        keterangan: h.keterangan,
+        createdAt: h.created_at ? h.created_at.toISOString() : null,
+        updatedAt: h.updated_at ? h.updated_at.toISOString() : null,
+      }));
+    } finally {
+      if (own) await c.end();
+    }
+  }
+
+  async createHoliday(holidayData) {
+    const conn = await this._getConnection();
+    try {
+      const [result] = await conn.execute(
+        'INSERT INTO holidays (start_date, end_date, keterangan) VALUES (?, ?, ?)',
+        [holidayData.start, holidayData.end || holidayData.start, holidayData.keterangan || '']
+      );
+      const [rows] = await conn.execute('SELECT id, start_date, end_date, keterangan, created_at, updated_at FROM holidays WHERE id = ?', [result.insertId]);
+      const h = rows[0];
+      return {
+        id: h.id,
+        start: h.start_date.toISOString().slice(0, 10),
+        end: h.end_date.toISOString().slice(0, 10),
+        keterangan: h.keterangan,
+        createdAt: h.created_at.toISOString(),
+        updatedAt: h.updated_at.toISOString(),
+      };
+    } finally {
+      await conn.end();
+    }
+  }
+
+  async updateHoliday(id, holidayData) {
+    const conn = await this._getConnection();
+    try {
+      const sets = [];
+      const params = [];
+      if (holidayData.start !== undefined) { sets.push('start_date = ?'); params.push(holidayData.start); }
+      if (holidayData.end !== undefined) { sets.push('end_date = ?'); params.push(holidayData.end); }
+      if (holidayData.keterangan !== undefined) { sets.push('keterangan = ?'); params.push(holidayData.keterangan); }
+      if (sets.length === 0) return null;
+      params.push(id);
+      const [result] = await conn.execute(`UPDATE holidays SET ${sets.join(', ')} WHERE id = ?`, params);
+      if (result.affectedRows === 0) return null;
+      const [rows] = await conn.execute('SELECT id, start_date, end_date, keterangan, created_at, updated_at FROM holidays WHERE id = ?', [id]);
+      const h = rows[0];
+      return {
+        id: h.id,
+        start: h.start_date.toISOString().slice(0, 10),
+        end: h.end_date.toISOString().slice(0, 10),
+        keterangan: h.keterangan,
+        createdAt: h.created_at.toISOString(),
+        updatedAt: h.updated_at.toISOString(),
+      };
+    } finally {
+      await conn.end();
+    }
+  }
+
+  async deleteHoliday(id) {
+    const conn = await this._getConnection();
+    try {
+      const [result] = await conn.execute('DELETE FROM holidays WHERE id = ?', [id]);
+      return result.affectedRows > 0;
+    } finally {
+      await conn.end();
+    }
   }
 
   async getMetadata() {

@@ -43,6 +43,8 @@ class JsonStorage {
       nextId: 1,
       nextTodoId: 1,
       nextEvidenceId: 1,
+      holidays: [],
+      nextHolidayId: 1,
     };
   }
 
@@ -53,8 +55,54 @@ class JsonStorage {
       tasks: data.tasks,
       nextId: data.nextId,
       nextTodoId: data.nextTodoId,
+      holidays: data.holidays || [],
       metadata: { version: meta.version || 1, lastSynced: meta.lastSynced || null, updatedAt: meta.updatedAt || null, title: meta.title || 'Timeframe as a System Analyst' },
     };
+  }
+
+  getHolidays() {
+    const data = this._load();
+    return data.holidays || [];
+  }
+
+  createHoliday(holidayData) {
+    const data = this._load();
+    if (!data.holidays) data.holidays = [];
+    const holiday = {
+      id: data.nextHolidayId || 1,
+      start: holidayData.start,
+      end: holidayData.end || holidayData.start,
+      keterangan: holidayData.keterangan || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    data.nextHolidayId = (data.nextHolidayId || 1) + 1;
+    data.holidays.push(holiday);
+    this._save(data);
+    return holiday;
+  }
+
+  updateHoliday(id, holidayData) {
+    const data = this._load();
+    if (!data.holidays) return null;
+    const holiday = data.holidays.find(h => h.id === id);
+    if (!holiday) return null;
+    if (holidayData.start !== undefined) holiday.start = holidayData.start;
+    if (holidayData.end !== undefined) holiday.end = holidayData.end;
+    if (holidayData.keterangan !== undefined) holiday.keterangan = holidayData.keterangan;
+    holiday.updatedAt = new Date().toISOString();
+    this._save(data);
+    return holiday;
+  }
+
+  deleteHoliday(id) {
+    const data = this._load();
+    if (!data.holidays) return false;
+    const idx = data.holidays.findIndex(h => h.id === id);
+    if (idx === -1) return false;
+    data.holidays.splice(idx, 1);
+    this._save(data);
+    return true;
   }
 
   getById(id) {

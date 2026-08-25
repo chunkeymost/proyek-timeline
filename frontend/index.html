@@ -325,6 +325,41 @@
   </div>
 </div>
 
+<!-- Holiday modal -->
+<div class="overlay" id="holiday-overlay">
+  <div class="modal holiday-modal">
+    <div class="modal-head">
+      <h2><i class="bi bi-calendar-plus"></i> Kelola Hari Libur</h2>
+      <button class="modal-close" id="holiday-close-btn">&times;</button>
+    </div>
+    <div class="modal-sub">Tambah hari libur selain Sabtu/Minggu. Tanggal libur akan diwarnai di gantt dan memotong jumlah hari pengerjaan.</div>
+
+    <form id="holiday-form" autocomplete="off">
+      <div class="row-2">
+        <div class="field">
+          <label for="f-hol-start">Tanggal Mulai</label>
+          <input type="date" id="f-hol-start" required>
+        </div>
+        <div class="field">
+          <label for="f-hol-end">Tanggal Selesai</label>
+          <input type="date" id="f-hol-end" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-hol-ket">Keterangan Hari Libur</label>
+        <input type="text" id="f-hol-ket" placeholder="cth: Cuti Bersama, Hari Raya" maxlength="255" required>
+      </div>
+      <div class="holiday-form-actions">
+        <button type="button" class="btn btn-ghost" id="hol-cancel-edit-btn" style="display:none;">Batal Edit</button>
+        <button type="submit" class="btn btn-primary" id="hol-save-btn"><i class="bi bi-check-lg"></i> Simpan</button>
+      </div>
+    </form>
+
+    <div class="holiday-list-head"><i class="bi bi-list-ul"></i> Daftar Hari Libur</div>
+    <div class="holiday-list" id="holiday-list"></div>
+  </div>
+</div>
+
 <script src="js/app.js"></script>
 </body>
 </html>
