@@ -60,6 +60,9 @@ Aplikasi web ringan untuk memvisualisasikan, melacak, dan mengelola jadwal tugas
 - **📎 Evidence Panel** — Sidepeek dari kiri untuk lampiran bukti tugas dengan 3 tipe (Link/Text/Gambar), thumbnail preview, dan shorten URL
 - **🏁 Finish Flag** — Tugas selesai (100%) ditandai latar hijau + emoji 🏁 di sidebar
 - **📊 Jumlah Hari Pengerjaan** — Tampilan jumlah hari kerja pada setiap item daftar tugas
+- **🗓️ Manajemen Hari Libur** — Tombol "Add Holiday" di legend untuk menambah hari libur selain Sabtu/Minggu via popup; bisa edit/hapus, support rentang tanggal (cuti bersama) & keterangan. Tanggal libur diberi warna seperti weekend di gantt chart dan otomatis memotong hitungan "Hari Pengerjaan"
+- **📋 Overview Cards** — 3 kartu ringkasan di atas board: Tugas Utama (selesai/total), Sub Task Open, dan Task Overdue
+- **👁️ Show/Hide Finished** — Switch untuk menyembunyikan tugas selesai (100%); status tersimpan di localStorage sehingga bertahan setelah refresh
 - **Garis "Hari Ini"** — Penanda tanggal sekarang secara otomatis
 - **Dual Storage** — JSON file (default) atau MySQL (opsional via `STORAGE=mysql`)
 - **Migration System** — Perubahan schema database terversioning dan repeatable
@@ -107,6 +110,10 @@ Jalan otomatis saat `STORAGE=mysql` — `server.js` menjalankan `migrate()` pada
 | `PUT` | `/api/tasks/:id/evidences/:evId` | Update evidence |
 | `DELETE` | `/api/tasks/:id/evidences/:evId` | Hapus evidence |
 | `GET` | `/api/tasks/:id/evidence-changelog` | Ambil history perubahan evidence |
+| `GET` | `/api/holidays` | Ambil semua hari libur |
+| `POST` | `/api/holidays` | Tambah hari libur (`start`, `end`, `keterangan`) |
+| `PUT` | `/api/holidays/:id` | Update hari libur |
+| `DELETE` | `/api/holidays/:id` | Hapus hari libur |
 | `POST` | `/api/backup` | Backup tasks.json ke file timestamp |
 | `GET` | `/api/backups` | List semua file backup di data/ |
 | `POST` | `/api/restore` | Restore data dari file backup |
@@ -137,6 +144,8 @@ Lihat `know-me/PLAN.md` untuk detail rencana implementasi.
 ## Catatan
 
 - Data tersimpan secara persistent di `backend/data/tasks.json` — tidak hilang saat browser di-refresh
+- Hari libur tersimpan di file yang sama (`backend/data/tasks.json`, array `holidays`) bersama data tugas
+- Mode MySQL: tabel `holidays` dibuat otomatis oleh auto-migration (`V9__create_holidays.sql`) saat startup
 - History restore & backup disimpan di `backend/data/restore-log.json` (terpisah dari data tugas)
 - File `frontend/index.html` tetap single-file; backend terpisah di `backend/server.js` + `backend/src/`
 - Bootstrap Icons dimuat dari CDN untuk ikon copy di notifikasi
